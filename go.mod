@@ -1,5 +1,5 @@
 module github.com/JackKCWong/go-netdog
 
-go 1.16
+go 1.14
 
-require github.com/spf13/cobra v1.2.1 // indirect
+require github.com/spf13/cobra v1.2.1
