@@ -3,74 +3,42 @@ package main
 import (
 	"io"
 	"net"
-	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 var root = &cobra.Command{
-	Use:   "netdog target [port]",
+	Use:   "netdog target",
 	Short: "netdog is a reader/writer for TCP/unix socket",
+	Long:  "the default behavior is to read from stdin and write to <target>",
 	Args:  cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		var fUnixSocket bool
-		var err error
-		var target string
-
-		if len(args) == 1 {
-			fUnixSocket, err = cmd.Flags().GetBool("unix-socket")
-			if err != nil {
-				return err
-			}
-
-			target = args[0]
+		target := args[0]
+		network, err := getNetwork(cmd.Flags())
+		if err != nil {
+			return err
 		}
 
-		if len(args) == 2 {
-			target = args[0] + ":" + args[1]
-		}
+		r := NewRunner()
 
-		r := Runner{
-			Input:  os.Stdin,
-			Output: os.Stdout,
-		}
-
-		return r.Run(RunnerArgs{
-			Target:       target,
-			IsUnixSocket: fUnixSocket,
-		})
+		return r.WriteToSocket(network, target)
 	},
 }
 
 func init() {
-	root.Flags().Bool("unix-socket", false, "the target is unix socket path")
+	root.PersistentFlags().Bool("unix-socket", false, "the target is unix socket path")
+
+	root.AddCommand(fetchCmd)
 }
 
-type Runner struct {
-	Input  io.Reader
-	Output io.Writer
-}
-
-type RunnerArgs struct {
-	Target       string
-	IsUnixSocket bool
-}
-
-func (r Runner) Run(args RunnerArgs) error {
+func (r Runner) WriteToSocket(network, target string) error {
 	var socket net.Conn
 	var err error
-	if args.IsUnixSocket {
-		socket, err = net.Dial("unix", args.Target)
-		if err != nil {
-			return err
-		}
-	} else {
-		socket, err = net.Dial("tcp", args.Target)
-		if err != nil {
-			return err
-		}
+	socket, err = net.Dial(network, target)
+	if err != nil {
+		return err
 	}
-
 	defer socket.Close()
 
 	if _, err = io.Copy(socket, r.Input); err != nil {
@@ -82,4 +50,17 @@ func (r Runner) Run(args RunnerArgs) error {
 	}
 
 	return nil
+}
+
+func getNetwork(flags *pflag.FlagSet) (string, error) {
+	fUnixSocket, err := flags.GetBool("unix-socket")
+	if err != nil {
+		return "", err
+	}
+
+	if fUnixSocket {
+		return "unix", nil
+	} else {
+		return "tcp", nil
+	}
 }
