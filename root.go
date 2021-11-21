@@ -29,7 +29,7 @@ var root = &cobra.Command{
 func init() {
 	root.PersistentFlags().Bool("unix-socket", false, "the target is unix socket path")
 
-	root.AddCommand(fetchCmd)
+	root.AddCommand(dialCmd)
 	root.AddCommand(lookupCmd)
 }
 
