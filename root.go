@@ -30,6 +30,7 @@ func init() {
 	root.PersistentFlags().Bool("unix-socket", false, "the target is unix socket path")
 
 	root.AddCommand(fetchCmd)
+	root.AddCommand(lookupCmd)
 }
 
 func (r Runner) WriteToSocket(network, target string) error {

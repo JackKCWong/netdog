@@ -32,10 +32,10 @@ func (r Runner) ReadLines() []string {
 	return lines
 }
 
-func (r Runner) Printlnf(format string, args ...interface{}) {
+func (r Runner) Printfln(format string, args ...interface{}) {
 	fmt.Fprintf(r.Output, format+"\n", args...)
 }
 
-func (r Runner) ErrPrintlnf(format string, args ...interface{}) {
+func (r Runner) ErrPrintfln(format string, args ...interface{}) {
 	fmt.Fprintf(r.ErrOutput, format+"\n", args...)
 }

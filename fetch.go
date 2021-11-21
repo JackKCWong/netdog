@@ -47,14 +47,14 @@ func (r Runner) Fetch(network, target string) error {
 			startTm := time.Now()
 			conn, err := net.DialTimeout(network, t, 10*time.Second)
 			if err != nil {
-				r.ErrPrintlnf("%s\terror connecting: %s", t, err)
+				r.ErrPrintfln("%s\terror connecting: %s", t, err)
 				return
 			}
 
 			endTm := time.Now()
 			conn.Close()
 
-			r.Printlnf("%s\t%s", t, endTm.Sub(startTm))
+			r.Printfln("%s\t%s", t, endTm.Sub(startTm))
 		}()
 	}
 
