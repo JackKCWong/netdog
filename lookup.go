@@ -6,7 +6,6 @@ import (
 	"strings"
 	"sync"
 	"text/tabwriter"
-	"text/template"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -50,8 +49,6 @@ func (r Runner) Lookup(addr string, withName bool) error {
 
 	tw := tabwriter.NewWriter(r.Output, 0, 0, 4, ' ', 0)
 	var mu sync.Mutex
-	firstT := template.Must(template.New("first").Parse(`{{.Host}}{{"\t"}}{{.Time}}{{"\t"}}{{.IP}}{{"\t"}}{{.Name}}{{"\n"}}`))
-	restT := template.Must(template.New("rest").Parse(`{{"\t\t"}}{{.IP}}{{"\t"}}{{.Name}}{{"\n"}}`))
 
 	for _, ad := range addresses {
 		ad := ad
@@ -63,12 +60,12 @@ func (r Runner) Lookup(addr string, withName bool) error {
 
 			startTm := time.Now()
 			result, err := resolver.LookupHost(ctx, ad)
+			endTm := time.Now()
+
 			if err != nil {
-				r.ErrPrintfln("%s\terror resolving: %s", ad, err)
+				r.ErrPrintfln("%s\t%s\terror resolving: %s", ad, endTm.Sub(startTm), err)
 				return
 			}
-
-			endTm := time.Now()
 
 			lookupName := func(ip string) string {
 				return ""
@@ -88,20 +85,20 @@ func (r Runner) Lookup(addr string, withName bool) error {
 			mu.Lock()
 			defer mu.Unlock()
 
-			firstT.Execute(tw, &row{
+			row{
 				Host: ad,
 				Time: endTm.Sub(startTm),
 				IP:   result[0],
 				Name: lookupName(result[0]),
-			})
+			}.print(tw)
 
 			for _, ip := range result[1:] {
-				restT.Execute(tw, &row{
+				row{
 					Host: "",
 					Time: 0,
 					IP:   ip,
 					Name: lookupName(ip),
-				})
+				}.print(tw)
 			}
 
 			Fprintfln(tw, "\t\t\t")
@@ -118,4 +115,12 @@ type row struct {
 	Time time.Duration
 	IP   string
 	Name string
+}
+
+func (r row) print(tw *tabwriter.Writer) {
+	if r.Time == 0 {
+		Fprintfln(tw, "%s\t\t%s\t%s", r.Host, r.IP, r.Name)
+	} else {
+		Fprintfln(tw, "%s\t%s\t%s\t%s", r.Host, r.Time, r.IP, r.Name)
+	}
 }
