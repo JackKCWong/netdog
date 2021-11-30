@@ -37,7 +37,7 @@ func TestCanWriteToUnixSocket(t *testing.T) {
 		Output: outBuf,
 	}
 
-	cmd.WriteToSocket("unix", socket)
+	cmd.WriteToSocket("unix", socket, false)
 
 	resp, err := http.ReadResponse(bufio.NewReader(bytes.NewBuffer(outBuf.Bytes())), nil)
 	if err != nil {
@@ -80,7 +80,7 @@ func TestCanWriteToTCPSocket(t *testing.T) {
 		Output: outBuf,
 	}
 
-	cmd.WriteToSocket("tcp", lis.Addr().String())
+	cmd.WriteToSocket("tcp", lis.Addr().String(), false)
 
 	resp, err := http.ReadResponse(bufio.NewReader(bytes.NewBuffer(outBuf.Bytes())), nil)
 	if err != nil {

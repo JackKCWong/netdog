@@ -1,11 +1,13 @@
 package main
 
 import (
-	"io"
-	"net"
-
+	"crypto/tls"
+	"crypto/x509"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"io"
+	"io/ioutil"
+	"net"
 )
 
 var root = &cobra.Command{
@@ -20,27 +22,42 @@ var root = &cobra.Command{
 			return err
 		}
 
+		tlsConfig, err := getTlsConfig(cmd.Flags())
+		if err != nil {
+			return err
+		}
+
 		r := NewRunner()
 
-		return r.WriteToSocket(network, target)
+		return r.WriteToSocket(network, target, tlsConfig)
 	},
 }
 
 func init() {
 	root.PersistentFlags().Bool("unix-socket", false, "the target is unix socket path")
 
+	root.Flags().Bool("tls", false, "dial using TLS")
+	root.Flags().String("rootca", "", "root ca file")
+
 	root.AddCommand(dialCmd)
 	root.AddCommand(lookupCmd)
 }
 
-func (r Runner) WriteToSocket(network, target string) error {
+func (r Runner) WriteToSocket(network, target string, tlsConfig *tls.Config) error {
 	var socket net.Conn
 	var err error
-	socket, err = net.Dial(network, target)
+
+	if tlsConfig != nil {
+		socket, err = tls.Dial(network, target, tlsConfig)
+	} else {
+		socket, err = net.Dial(network, target)
+	}
+
+	defer socket.Close()
+
 	if err != nil {
 		return err
 	}
-	defer socket.Close()
 
 	if _, err = io.Copy(socket, r.Input); err != nil {
 		return err
@@ -51,6 +68,40 @@ func (r Runner) WriteToSocket(network, target string) error {
 	}
 
 	return nil
+}
+
+func getTlsConfig(flags *pflag.FlagSet) (*tls.Config, error) {
+	if isTls, err := flags.GetBool("tls"); err != nil {
+		return nil, err
+	} else {
+		if !isTls {
+			return nil, nil
+		}
+	}
+
+	if rootCa, err := flags.GetString("rootca"); err != nil {
+		return nil, err
+	} else {
+		if rootCa == "skip" {
+			return &tls.Config{
+				InsecureSkipVerify: true,
+			}, nil
+		} else if rootCa != "" {
+			pem, err := ioutil.ReadFile(rootCa)
+			if err != nil {
+				return nil, err
+			}
+
+			certs := x509.NewCertPool()
+			certs.AppendCertsFromPEM(pem)
+
+			return &tls.Config{
+				RootCAs: certs,
+			}, nil
+		}
+	}
+
+	return &tls.Config{}, nil
 }
 
 func getNetwork(flags *pflag.FlagSet) (string, error) {

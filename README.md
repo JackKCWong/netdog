@@ -12,6 +12,7 @@ go-netdog --help
 # examples
 # send raw tcp payload to target
 printf "GET /get HTTP/1.0\r\n\r\n" | go-netdog httpbin.org:80
+printf "GET /get HTTP/1.0\r\n\r\n" | go-netdog --tls httpbin.org:443
 
 # test tcp / tls connection to target
 go-netdog dial httpbin.org:80
