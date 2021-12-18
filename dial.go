@@ -88,24 +88,39 @@ func (r Runner) Dial(network, target string, tlsConfig *tls.Config) error {
 			var dialer net.Dialer = net.Dialer{
 				Timeout: 5 * time.Second,
 			}
-			var err error
+			var connErr error
 			var conn net.Conn
+			var ip, cipher, tlsVer, sni string
+			var tlsConn *tls.Conn
+			var tlsVersions = map[uint16]string{
+				tls.VersionTLS10: "TLS1.0",
+				tls.VersionTLS11: "TLS1.1",
+				tls.VersionTLS12: "TLS1.2",
+				tls.VersionTLS13: "TLS1.3",
+			}
 
 			startTm := time.Now()
 			if tlsConfig != nil {
-				conn, err = tls.DialWithDialer(&dialer, network, t, tlsConfig)
+				tlsConn, connErr = tls.DialWithDialer(&dialer, network, t, tlsConfig)
+				conn = tlsConn
 			} else {
-				conn, err = dialer.Dial(network, t)
+				conn, connErr = dialer.Dial(network, t)
 			}
 			endTm := time.Now()
-			if err != nil {
-				r.ErrPrintfln("%s\terror connecting: %s", t, err)
+			if connErr != nil {
+				r.ErrPrintfln("%s\terror connecting: %s", t, connErr)
 				return
 			}
 
-			conn.Close()
+			ip = conn.RemoteAddr().String()
+			state := tlsConn.ConnectionState()
+			cipher = tls.CipherSuiteName(state.CipherSuite)
+			tlsVer = tlsVersions[state.Version]
+			sni = state.ServerName
 
-			r.Printfln("%s\t%s", t, endTm.Sub(startTm))
+			_ = conn.Close()
+
+			r.Printfln("%s\t%s\t%s\t%s\t%s\t%s", t, endTm.Sub(startTm), ip, sni, tlsVer, cipher)
 		}()
 	}
 
