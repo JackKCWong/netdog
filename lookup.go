@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"io"
 	"net"
 	"strings"
 	"sync"
@@ -48,6 +49,7 @@ func (r Runner) Lookup(addr string, withName bool) error {
 	}
 
 	tw := tabwriter.NewWriter(r.Output, 0, 0, 4, ' ', 0)
+	sw := newMutWriter(tw)
 	var mu sync.Mutex
 
 	for _, ad := range addresses {
@@ -90,23 +92,34 @@ func (r Runner) Lookup(addr string, withName bool) error {
 				Time: endTm.Sub(startTm),
 				IP:   result[0],
 				Name: lookupName(result[0]),
-			}.print(tw)
+			}.print(sw)
 
+			var ipWg sync.WaitGroup
 			for _, ip := range result[1:] {
-				row{
-					Host: "",
-					Time: 0,
-					IP:   ip,
-					Name: lookupName(ip),
-				}.print(tw)
+				ip := ip
+				ipWg.Add(1)
+				go func() {
+					defer ipWg.Done()
+					row{
+						Host: "",
+						Time: 0,
+						IP:   ip,
+						Name: lookupName(ip),
+					}.print(sw)
+				}()
 			}
 
-			Fprintfln(tw, "\t\t\t")
+			ipWg.Wait()
+			Fprintfln(sw, "\t\t\t")
 		}()
 	}
 
 	wg.Wait()
-	tw.Flush()
+	err := tw.Flush()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -117,10 +130,10 @@ type row struct {
 	Name string
 }
 
-func (r row) print(tw *tabwriter.Writer) {
+func (r row) print(w io.Writer) {
 	if r.Time == 0 {
-		Fprintfln(tw, "%s\t\t%s\t%s", r.Host, r.IP, r.Name)
+		Fprintfln(w, "%s\t\t%s\t%s", r.Host, r.IP, r.Name)
 	} else {
-		Fprintfln(tw, "%s\t%s\t%s\t%s", r.Host, r.Time, r.IP, r.Name)
+		Fprintfln(w, "%s\t%s\t%s\t%s", r.Host, r.Time, r.IP, r.Name)
 	}
 }
