@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net"
 	"sync"
+	"text/tabwriter"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -27,6 +28,9 @@ var dialCmd = &cobra.Command{
 		}
 
 		r := NewRunner()
+		tw := tabwriter.NewWriter(r.Output, 0, 0, 4, ' ', 0)
+		r.Output = tw
+
 		var tlsConfig *tls.Config
 
 		isTls, err := cmd.Flags().GetBool("tls")
@@ -61,7 +65,11 @@ var dialCmd = &cobra.Command{
 			}
 		}
 
-		return r.Dial(network, target, tlsConfig)
+		err = r.Dial(network, target, tlsConfig)
+		if err != nil {
+			return err
+		}
+		return tw.Flush()
 	},
 }
 
@@ -90,7 +98,6 @@ func (r Runner) Dial(network, target string, tlsConfig *tls.Config) error {
 			}
 			var connErr error
 			var conn net.Conn
-			var ip, cipher, tlsVer, sni string
 			var tlsConn *tls.Conn
 			var tlsVersions = map[uint16]string{
 				tls.VersionTLS10: "TLS1.0",
@@ -112,15 +119,17 @@ func (r Runner) Dial(network, target string, tlsConfig *tls.Config) error {
 				return
 			}
 
-			ip = conn.RemoteAddr().String()
+			ip := conn.RemoteAddr().String()
 			state := tlsConn.ConnectionState()
-			cipher = tls.CipherSuiteName(state.CipherSuite)
-			tlsVer = tlsVersions[state.Version]
-			sni = state.ServerName
+			cipher := tls.CipherSuiteName(state.CipherSuite)
+			tlsVer := tlsVersions[state.Version]
+			sni := state.ServerName
+			alpn := state.NegotiatedProtocol
 
 			_ = conn.Close()
 
-			r.Printfln("%s\t%s\t%s\t%s\t%s\t%s", t, endTm.Sub(startTm), ip, sni, tlsVer, cipher)
+			r.Printfln("%s\t%s\t%s\t%s\t%s\t%s\t%s", t, endTm.Sub(startTm),
+				ip, sni, tlsVer, alpn, cipher)
 		}()
 	}
 
