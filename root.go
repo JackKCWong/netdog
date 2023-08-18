@@ -3,11 +3,12 @@ package main
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"io"
+	"net"
+	"os"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"io"
-	"io/ioutil"
-	"net"
 )
 
 var root = &cobra.Command{
@@ -87,7 +88,7 @@ func getTlsConfig(flags *pflag.FlagSet) (*tls.Config, error) {
 				InsecureSkipVerify: true,
 			}, nil
 		} else if rootCa != "" {
-			pem, err := ioutil.ReadFile(rootCa)
+			pem, err := os.ReadFile(rootCa)
 			if err != nil {
 				return nil, err
 			}
