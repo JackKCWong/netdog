@@ -54,11 +54,11 @@ func (r Runner) WriteToSocket(network, target string, tlsConfig *tls.Config) err
 		socket, err = net.Dial(network, target)
 	}
 
-	defer socket.Close()
-
 	if err != nil {
 		return err
 	}
+
+	defer socket.Close()
 
 	if _, err = io.Copy(socket, r.Input); err != nil {
 		return err
