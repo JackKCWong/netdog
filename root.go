@@ -1,11 +1,13 @@
 package main
 
 import (
+	"bufio"
 	"crypto/tls"
 	"crypto/x509"
 	"io"
 	"net"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -28,9 +30,14 @@ var root = &cobra.Command{
 			return err
 		}
 
+		delim, err := cmd.Flags().GetString("sep")
+		if err != nil {
+			return err
+		}
+
 		r := NewRunner()
 
-		return r.WriteToSocket(network, target, tlsConfig)
+		return r.WriteToSocket(network, target, delim, tlsConfig)
 	},
 }
 
@@ -39,12 +46,13 @@ func init() {
 
 	root.Flags().Bool("tls", false, "dial using TLS")
 	root.Flags().String("rootca", "", "root ca file")
+	root.Flags().String("sep", "", "a message separator, useful when you want to send multiple 'message' to a message oriented protocol, like websocket")
 
 	root.AddCommand(dialCmd)
 	root.AddCommand(lookupCmd)
 }
 
-func (r Runner) WriteToSocket(network, target string, tlsConfig *tls.Config) error {
+func (r Runner) WriteToSocket(network, target, delim string, tlsConfig *tls.Config) error {
 	var socket net.Conn
 	var err error
 
@@ -60,12 +68,29 @@ func (r Runner) WriteToSocket(network, target string, tlsConfig *tls.Config) err
 
 	defer socket.Close()
 
-	if _, err = io.Copy(socket, r.Input); err != nil {
-		return err
-	}
+	if len(delim) == 0 {
+		if _, err = io.Copy(socket, r.Input); err != nil {
+			return err
+		}
 
-	if _, err = io.Copy(r.Output, socket); err != nil {
-		return err
+		if _, err = io.Copy(r.Output, socket); err != nil {
+			return err
+		}
+	} else {
+		scanner := bufio.NewScanner(r.Input)
+		scanner.Split(makeSplitFunc(delim))
+
+		for scanner.Scan() {
+			msg := scanner.Bytes()
+			if _, err = socket.Write(msg); err != nil {
+				return err
+			}
+
+		}
+
+		if _, err = io.Copy(r.Output, socket); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -115,5 +140,23 @@ func getNetwork(flags *pflag.FlagSet) (string, error) {
 		return "unix", nil
 	} else {
 		return "tcp", nil
+	}
+}
+
+func makeSplitFunc(delim string) bufio.SplitFunc {
+	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
+		if atEOF && len(data) == 0 {
+			return 0, nil, nil
+		}
+
+		if i := strings.Index(string(data), delim); i >= 0 {
+			return i + len(delim), data[0:i], nil
+		}
+
+		if atEOF {
+			return len(data), data, nil
+		}
+
+		return
 	}
 }
