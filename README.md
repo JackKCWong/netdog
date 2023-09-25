@@ -14,6 +14,9 @@ go-netdog --help
 printf "GET /get HTTP/1.0\r\n\r\n" | go-netdog httpbin.org:80
 printf "GET /get HTTP/1.0\r\n\r\n" | go-netdog --tls httpbin.org:443
 
+# send raw websocket frames
+go-netdog --tls ws.postman-echo.com:443 ws.http hello.bin close.bin
+
 # test tcp / tls connection to target
 go-netdog dial httpbin.org:80
 go-netdog dial --tls httpbin.org:443
@@ -33,3 +36,7 @@ printf "httpbin.org\nbaidu.com" | go-netdog lookup
 [x] host:port scanning
 
 [x] DNS lookup
+
+## notes
+
+* turning a hex string into binary: `xxd -r -p hex.txt out.bin`
