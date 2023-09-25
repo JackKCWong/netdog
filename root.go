@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"io"
+	"log"
 	"net"
 	"os"
 	"strings"
@@ -30,14 +31,21 @@ var root = &cobra.Command{
 			return err
 		}
 
-		delim, err := cmd.Flags().GetString("sep")
-		if err != nil {
-			return err
-		}
-
 		r := NewRunner()
 
-		return r.WriteToSocket(network, target, delim, tlsConfig)
+		if len(args) > 1 {
+			rds := make([]io.Reader, len(args)-1)
+			for i := range args[1:] {
+				rds[i], err = os.Open(args[i+1])
+				if err != nil {
+					log.Printf("invalid input: %q", err)
+					break
+				}
+			}
+			r.Input = io.MultiReader(rds...)
+		}
+
+		return r.WriteToSocket(network, target, tlsConfig)
 	},
 }
 
@@ -46,13 +54,12 @@ func init() {
 
 	root.Flags().Bool("tls", false, "dial using TLS")
 	root.Flags().String("rootca", "", "root ca file")
-	root.Flags().String("sep", "", "a message separator, useful when you want to send multiple 'message' to a message oriented protocol, like websocket")
 
 	root.AddCommand(dialCmd)
 	root.AddCommand(lookupCmd)
 }
 
-func (r Runner) WriteToSocket(network, target, delim string, tlsConfig *tls.Config) error {
+func (r Runner) WriteToSocket(network, target string, tlsConfig *tls.Config) error {
 	var socket net.Conn
 	var err error
 
@@ -68,29 +75,12 @@ func (r Runner) WriteToSocket(network, target, delim string, tlsConfig *tls.Conf
 
 	defer socket.Close()
 
-	if len(delim) == 0 {
-		if _, err = io.Copy(socket, r.Input); err != nil {
-			return err
-		}
+	if _, err = io.Copy(socket, r.Input); err != nil {
+		return err
+	}
 
-		if _, err = io.Copy(r.Output, socket); err != nil {
-			return err
-		}
-	} else {
-		scanner := bufio.NewScanner(r.Input)
-		scanner.Split(makeSplitFunc(delim))
-
-		for scanner.Scan() {
-			msg := scanner.Bytes()
-			if _, err = socket.Write(msg); err != nil {
-				return err
-			}
-
-		}
-
-		if _, err = io.Copy(r.Output, socket); err != nil {
-			return err
-		}
+	if _, err = io.Copy(r.Output, socket); err != nil {
+		return err
 	}
 
 	return nil

@@ -37,7 +37,7 @@ func TestCanWriteToUnixSocket(t *testing.T) {
 		Output: outBuf,
 	}
 
-	cmd.WriteToSocket("unix", socket, "", nil)
+	cmd.WriteToSocket("unix", socket, nil)
 
 	resp, err := http.ReadResponse(bufio.NewReader(bytes.NewBuffer(outBuf.Bytes())), nil)
 	if err != nil {
@@ -80,7 +80,7 @@ func TestCanWriteToTCPSocket(t *testing.T) {
 		Output: outBuf,
 	}
 
-	cmd.WriteToSocket("tcp", lis.Addr().String(), "", nil)
+	cmd.WriteToSocket("tcp", lis.Addr().String(), nil)
 
 	resp, err := http.ReadResponse(bufio.NewReader(bytes.NewBuffer(outBuf.Bytes())), nil)
 	if err != nil {
@@ -96,16 +96,5 @@ func TestCanWriteToTCPSocket(t *testing.T) {
 }
 
 func TestWriteFrame(t *testing.T) {
-	hs := `GET /raw HTTP/1.1
-Host: ws.postman-echo.com
-Upgrade: websocket
-Connection: Upgrade
-Sec-WebSocket-Key: x3JJHMbDL1EzLkh9GBhXDw==
-Sec-WebSocket-Version: 13`
-
-	full := make([]byte, 0)
-	full = append(full, []byte(hs)...)
-	full = append(full, []byte("\n\n====")...)
-	full = append(full, []byte{0x81, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f}...)
-	os.WriteFile("hello.bin", full, 0700)
+	os.WriteFile("hello.bin", []byte{0x81, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f}, 0700)
 }

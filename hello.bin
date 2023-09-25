@@ -1,8 +1,1 @@
-GET /raw HTTP/1.1
-Host: ws.postman-echo.com
-Upgrade: websocket
-Connection: Upgrade
-Sec-WebSocket-Key: x3JJHMbDL1EzLkh9GBhXDw==
-Sec-WebSocket-Version: 13
-
-====ÅHello
+ÅHello
