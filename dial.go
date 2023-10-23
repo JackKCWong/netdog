@@ -113,23 +113,26 @@ func (r Runner) Dial(network, target string, tlsConfig *tls.Config) error {
 			} else {
 				conn, connErr = dialer.Dial(network, t)
 			}
-			endTm := time.Now()
 			if connErr != nil {
 				r.ErrPrintfln("%s\terror connecting: %s", t, connErr)
 				return
 			}
 
+			endTm := time.Now()
+			defer conn.Close()
 			ip := conn.RemoteAddr().String()
-			state := tlsConn.ConnectionState()
-			cipher := tls.CipherSuiteName(state.CipherSuite)
-			tlsVer := tlsVersions[state.Version]
-			sni := state.ServerName
-			alpn := state.NegotiatedProtocol
+			if tlsConn == nil {
+				r.Printfln("%s\t%s\t%s", t, endTm.Sub(startTm), ip)
+			} else {
+				state := tlsConn.ConnectionState()
+				cipher := tls.CipherSuiteName(state.CipherSuite)
+				tlsVer := tlsVersions[state.Version]
+				sni := state.ServerName
+				alpn := state.NegotiatedProtocol
 
-			_ = conn.Close()
-
-			r.Printfln("%s\t%s\t%s\t%s\t%s\t%s\t%s", t, endTm.Sub(startTm),
-				ip, sni, tlsVer, alpn, cipher)
+				r.Printfln("%s\t%s\t%s\t%s\t%s\t%s\t%s", t, endTm.Sub(startTm),
+					ip, sni, tlsVer, alpn, cipher)
+			}
 		}()
 	}
 
