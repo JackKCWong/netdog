@@ -3,8 +3,8 @@ package main
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"io/ioutil"
 	"net"
+	"os"
 	"sync"
 	"text/tabwriter"
 	"time"
@@ -50,7 +50,7 @@ var dialCmd = &cobra.Command{
 			if rootCa == "skip" {
 				skipVerify = true
 			} else if rootCa != "" {
-				pem, err := ioutil.ReadFile(rootCa)
+				pem, err := os.ReadFile(rootCa)
 				if err != nil {
 					return err
 				}

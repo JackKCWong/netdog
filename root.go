@@ -1,14 +1,12 @@
 package main
 
 import (
-	"bufio"
 	"crypto/tls"
 	"crypto/x509"
 	"io"
 	"log"
 	"net"
 	"os"
-	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -130,23 +128,5 @@ func getNetwork(flags *pflag.FlagSet) (string, error) {
 		return "unix", nil
 	} else {
 		return "tcp", nil
-	}
-}
-
-func makeSplitFunc(delim string) bufio.SplitFunc {
-	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
-		if atEOF && len(data) == 0 {
-			return 0, nil, nil
-		}
-
-		if i := strings.Index(string(data), delim); i >= 0 {
-			return i + len(delim), data[0:i], nil
-		}
-
-		if atEOF {
-			return len(data), data, nil
-		}
-
-		return
 	}
 }
