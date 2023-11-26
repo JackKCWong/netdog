@@ -118,17 +118,20 @@ func (r *Runner) Dial(network string, target string, tlsConfig *tls.Config, snif
 			}
 
 			defer conn.Close()
-			ip := conn.RemoteAddr().String()
+			ip := strings.Split(conn.RemoteAddr().String(), ":")[0]
+			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+			defer cancel()
+			names, _ := resolver.LookupAddr(ctx, ip)
 			if tlsConfig == nil {
-				r.Printfln("%s\t%s\t%s", target, endTm.Sub(startTm), ip)
+				r.Printfln("%s\t%s\t%s\t%s", target, endTm.Sub(startTm), ip, strings.Join(names, ", "))
 			} else {
 				state := tlsConn.ConnectionState()
 				cipher := tls.CipherSuiteName(state.CipherSuite)
 				tlsVer := tlsVersions[state.Version]
 				alpn := state.NegotiatedProtocol
 
-				r.Printfln("%s\t%s\t%s\t%s\t%s\t%s", target, endTm.Sub(startTm),
-					ip, tlsVer, alpn, cipher)
+				r.Printfln("%s\t%s\t%s\t%s\t%s\t%s\t%s", target, endTm.Sub(startTm),
+					ip, tlsVer, alpn, cipher, strings.Join(names, ", "))
 			}
 		}()
 	}
