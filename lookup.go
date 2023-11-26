@@ -35,7 +35,7 @@ func init() {
 	lookupCmd.Flags().Bool("name", false, "lookup names of the IP address(es)")
 }
 
-func (r Runner) Lookup(addr string, withName bool) error {
+func (r *Runner) Lookup(addr string, withName bool) error {
 	var addresses []string
 	if addr != "" {
 		addresses = []string{addr}

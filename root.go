@@ -58,7 +58,7 @@ func init() {
 	root.AddCommand(lookupCmd)
 }
 
-func (r Runner) WriteToSocket(network, target string, tlsConfig *tls.Config) error {
+func (r *Runner) WriteToSocket(network, target string, tlsConfig *tls.Config) error {
 	var socket net.Conn
 	var err error
 

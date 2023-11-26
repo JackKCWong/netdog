@@ -58,7 +58,7 @@ func init() {
 	dialCmd.Flags().BoolP("insecure", "k", false, "skip TLS verification")
 }
 
-func (r Runner) Dial(network string, target string, tlsConfig *tls.Config, sniff bool) error {
+func (r *Runner) Dial(network string, target string, tlsConfig *tls.Config, sniff bool) error {
 	resolver := &net.Resolver{
 		PreferGo: true,
 	}
