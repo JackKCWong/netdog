@@ -52,6 +52,7 @@ func init() {
 
 	root.Flags().Bool("tls", false, "dial using TLS")
 	root.Flags().String("rootca", "", "root ca file")
+	root.Flags().BoolP("insecure", "k", false, "skip TLS verification")
 
 	root.AddCommand(dialCmd)
 	root.AddCommand(lookupCmd)
@@ -85,37 +86,31 @@ func (r Runner) WriteToSocket(network, target string, tlsConfig *tls.Config) err
 }
 
 func getTlsConfig(flags *pflag.FlagSet) (*tls.Config, error) {
-	if isTls, err := flags.GetBool("tls"); err != nil {
-		return nil, err
-	} else {
-		if !isTls {
-			return nil, nil
-		}
+	if insecure, _ := flags.GetBool("insecure"); insecure {
+		return &tls.Config{
+			InsecureSkipVerify: true,
+		}, nil
 	}
 
-	if rootCa, err := flags.GetString("rootca"); err != nil {
-		return nil, err
-	} else {
-		if rootCa == "skip" {
-			return &tls.Config{
-				InsecureSkipVerify: true,
-			}, nil
-		} else if rootCa != "" {
-			pem, err := os.ReadFile(rootCa)
-			if err != nil {
-				return nil, err
-			}
-
-			certs := x509.NewCertPool()
-			certs.AppendCertsFromPEM(pem)
-
-			return &tls.Config{
-				RootCAs: certs,
-			}, nil
+	if rootCa, _ := flags.GetString("rootca"); rootCa != "" {
+		pem, err := os.ReadFile(rootCa)
+		if err != nil {
+			return nil, err
 		}
+
+		certs := x509.NewCertPool()
+		certs.AppendCertsFromPEM(pem)
+
+		return &tls.Config{
+			RootCAs: certs,
+		}, nil
 	}
 
-	return &tls.Config{}, nil
+	if isTls, _ := flags.GetBool("tls"); isTls {
+		return &tls.Config{}, nil
+	} else {
+		return nil, nil
+	}
 }
 
 func getNetwork(flags *pflag.FlagSet) (string, error) {

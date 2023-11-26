@@ -2,9 +2,7 @@ package main
 
 import (
 	"crypto/tls"
-	"crypto/x509"
 	"net"
-	"os"
 	"sync"
 	"text/tabwriter"
 	"time"
@@ -31,44 +29,16 @@ var dialCmd = &cobra.Command{
 		tw := tabwriter.NewWriter(r.Output, 0, 0, 4, ' ', 0)
 		r.Output = tw
 
-		var tlsConfig *tls.Config
-
-		isTls, err := cmd.Flags().GetBool("tls")
+		tlsConfig, err := getTlsConfig(cmd.Flags())
 		if err != nil {
 			return err
-		}
-
-		if isTls {
-			rootCa, err := cmd.Flags().GetString("rootca")
-			if err != nil {
-				return err
-			}
-
-			var skipVerify bool
-			var roots *x509.CertPool
-
-			if rootCa == "skip" {
-				skipVerify = true
-			} else if rootCa != "" {
-				pem, err := os.ReadFile(rootCa)
-				if err != nil {
-					return err
-				}
-
-				roots = x509.NewCertPool()
-				roots.AppendCertsFromPEM(pem)
-			}
-
-			tlsConfig = &tls.Config{
-				InsecureSkipVerify: skipVerify,
-				RootCAs:            roots,
-			}
 		}
 
 		err = r.Dial(network, target, tlsConfig)
 		if err != nil {
 			return err
 		}
+
 		return tw.Flush()
 	},
 }
@@ -76,6 +46,7 @@ var dialCmd = &cobra.Command{
 func init() {
 	dialCmd.Flags().Bool("tls", false, "dial using TLS")
 	dialCmd.Flags().String("rootca", "", "root ca file")
+	dialCmd.Flags().BoolP("insecure", "k", false, "skip TLS verification")
 }
 
 func (r Runner) Dial(network, target string, tlsConfig *tls.Config) error {
