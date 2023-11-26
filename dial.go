@@ -103,12 +103,12 @@ func (r *Runner) Dial(network string, target string, tlsConfig *tls.Config, snif
 			}
 
 			startTm := time.Now()
-			if tlsConfig != nil {
+			if tlsConfig == nil {
+				conn, connErr = dialer.Dial(network, ad)
+			} else {
 				tlsConfig.ServerName = serverName
 				tlsConn, connErr = tls.DialWithDialer(&dialer, network, ad, tlsConfig)
 				conn = tlsConn
-			} else {
-				conn, connErr = dialer.Dial(network, ad)
 			}
 
 			endTm := time.Now()
@@ -119,7 +119,7 @@ func (r *Runner) Dial(network string, target string, tlsConfig *tls.Config, snif
 
 			defer conn.Close()
 			ip := conn.RemoteAddr().String()
-			if tlsConn == nil {
+			if tlsConfig == nil {
 				r.Printfln("%s\t%s\t%s", target, endTm.Sub(startTm), ip)
 			} else {
 				state := tlsConn.ConnectionState()
