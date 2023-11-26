@@ -5,23 +5,25 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sync"
 )
 
 type Runner struct {
 	Input     io.Reader
 	Output    io.Writer
 	ErrOutput io.Writer
+	mux       sync.Mutex
 }
 
-func NewRunner() Runner {
-	return Runner{
+func NewRunner() *Runner {
+	return &Runner{
 		Input:     os.Stdin,
 		Output:    os.Stdout,
 		ErrOutput: os.Stderr,
 	}
 }
 
-func (r Runner) ReadLines() []string {
+func (r *Runner) ReadLines() []string {
 	lines := make([]string, 0)
 	scanner := bufio.NewScanner(r.Input)
 
@@ -32,10 +34,16 @@ func (r Runner) ReadLines() []string {
 	return lines
 }
 
-func (r Runner) Printfln(format string, args ...interface{}) {
+func (r *Runner) Printfln(format string, args ...interface{}) {
+	r.mux.Lock()
+	defer r.mux.Unlock()
+
 	fmt.Fprintf(r.Output, format+"\n", args...)
 }
 
-func (r Runner) ErrPrintfln(format string, args ...interface{}) {
+func (r *Runner) ErrPrintfln(format string, args ...interface{}) {
+	r.mux.Lock()
+	defer r.mux.Unlock()
+
 	fmt.Fprintf(r.ErrOutput, format+"\n", args...)
 }
