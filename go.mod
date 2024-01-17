@@ -1,4 +1,4 @@
-module github.com/JackKCWong/go-netdog
+module github.com/JackKCWong/netdog
 
 go 1.14
 
