@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -15,7 +16,7 @@ import (
 var root = &cobra.Command{
 	Use:   "netdog target",
 	Short: "netdog is a reader/writer for TCP/unix socket",
-	Long:  "the default behavior is to read from stdin and write to <target>",
+	Long:  "read from stdin/files and write to <target> as is",
 	Args:  cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		target := args[0]
@@ -25,6 +26,11 @@ var root = &cobra.Command{
 		}
 
 		tlsConfig, err := getTlsConfig(cmd.Flags())
+		if err != nil {
+			return err
+		}
+
+		interval, err := cmd.Flags().GetDuration("interval")
 		if err != nil {
 			return err
 		}
@@ -39,6 +45,9 @@ var root = &cobra.Command{
 					log.Printf("invalid input: %q", err)
 					break
 				}
+				if interval > 0 {
+					rds[i] = newDelayedReader(rds[i], interval)
+				}
 			}
 			r.Input = io.MultiReader(rds...)
 		}
@@ -47,12 +56,31 @@ var root = &cobra.Command{
 	},
 }
 
+func newDelayedReader(r io.Reader, delay time.Duration) io.Reader {
+	return &delayedReader{r: r, delay: delay}
+}
+
+type delayedReader struct {
+	r         io.Reader
+	delay time.Duration
+}
+
+func (r *delayedReader) Read(p []byte) (int, error) {
+	if r.delay > 0 {
+		time.Sleep(r.delay)
+		r.delay = 0 // only delay once
+	}
+
+	return r.r.Read(p)
+}
+
 func init() {
 	root.PersistentFlags().Bool("unix-socket", false, "the target is unix socket path")
 
 	root.Flags().Bool("tls", false, "dial using TLS")
 	root.Flags().String("rootca", "", "root ca file")
 	root.Flags().BoolP("insecure", "k", false, "skip TLS verification")
+	root.Flags().DurationP("interval", "t", time.Duration(0), "interval between each message")
 
 	root.AddCommand(dialCmd)
 	root.AddCommand(lookupCmd)
