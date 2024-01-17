@@ -14,7 +14,7 @@ import (
 )
 
 var root = &cobra.Command{
-	Use:   "netdog target",
+	Use:   "netdog target [files...]",
 	Short: "netdog is a reader/writer for TCP/unix socket",
 	Long:  "read from stdin/files and write to <target> as is",
 	Args:  cobra.MinimumNArgs(1),
@@ -80,7 +80,7 @@ func init() {
 	root.Flags().Bool("tls", false, "dial using TLS")
 	root.Flags().String("rootca", "", "root ca file")
 	root.Flags().BoolP("insecure", "k", false, "skip TLS verification")
-	root.Flags().DurationP("interval", "t", time.Duration(0), "interval between each message")
+	root.Flags().DurationP("interval", "t", time.Duration(0), "when sending multiple files, add an interval between each send")
 
 	root.AddCommand(dialCmd)
 	root.AddCommand(lookupCmd)
