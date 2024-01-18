@@ -6,26 +6,26 @@ an immitation of netcat for fun and practice
 ## usage
 
 ```bash
-go get -u github.com/JackKCWong/go-netdog
-go-netdog --help
+go install  github.com/JackKCWong/netdog@latest
+netdog --help
 
 # examples
 # send raw tcp payload to target
-printf "GET /get HTTP/1.0\r\n\r\n" | go-netdog httpbin.org:80
-printf "GET /get HTTP/1.0\r\n\r\n" | go-netdog --tls httpbin.org:443
+printf "GET /get HTTP/1.0\r\n\r\n" | netdog httpbin.org:80
+printf "GET /get HTTP/1.0\r\n\r\n" | netdog --tls httpbin.org:443
 
 # send raw websocket frames
-go-netdog --tls ws.postman-echo.com:443 ws.http hello.bin close.bin
+netdog --tls ws.postman-echo.com:443 ws.http hello.bin close.bin
 
 # test tcp / tls connection to target
-go-netdog dial httpbin.org:80
-go-netdog dial --tls httpbin.org:443
-printf "httpbin.org:80\nhttpbin.org:443" | go-netdog dial # this only test for tcp connection, not tls
+netdog dial httpbin.org:80
+netdog dial --tls httpbin.org:443
+printf "httpbin.org:80\nhttpbin.org:443" | netdog dial # this only test for tcp connection, not tls
 
 # lookup DNS and time the responses
-go-netdog lookup httpbin.org
-go-netdog lookup --name httpbin.org
-printf "httpbin.org\nbaidu.com" | go-netdog lookup 
+netdog lookup httpbin.org
+netdog lookup --name httpbin.org
+printf "httpbin.org\nbaidu.com" | netdog lookup 
 ```
 
 
