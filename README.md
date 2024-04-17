@@ -26,6 +26,7 @@ printf "httpbin.org:80\nhttpbin.org:443" | netdog dial # this only test for tcp 
 netdog lookup httpbin.org
 netdog lookup --name httpbin.org
 printf "httpbin.org\nbaidu.com" | netdog lookup 
+printf "tcp 127.0.0.1:8080\ntcp 127.0.0.2:80\n" | netdog lookup --grep
 ```
 
 
