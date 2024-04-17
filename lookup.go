@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"net"
+	"regexp"
 	"strings"
 	"sync"
 	"text/tabwriter"
@@ -22,25 +23,41 @@ var lookupCmd = &cobra.Command{
 			return err
 		}
 
+		withGrep, err := cmd.Flags().GetBool("grep")
+		if err != nil {
+			return err
+		}
+
 		var addr []string
 		if len(args) > 0 {
 			addr = args
 		}
 
-		return r.Lookup(addr, withName)
+		return r.Lookup(addr, withName, withGrep)
 	},
 }
 
 func init() {
-	lookupCmd.Flags().Bool("name", false, "lookup names of the IP address(es)")
+	lookupCmd.Flags().BoolP("name", "n", false, "lookup names of the IP address(es)")
+	lookupCmd.Flags().BoolP("grep", "g", false, "grep IP addresses from input using regex")
 }
 
-func (r *Runner) Lookup(addr []string, withName bool) error {
+func (r *Runner) Lookup(args []string, withName bool, withGrep bool) error {
 	var addresses []string
-	if addr != nil {
-		addresses = addr
+	if args != nil {
+		addresses = args
 	} else {
 		addresses = r.ReadLines()
+	}
+
+	if withGrep {
+	    // define a regex to match IPv4 addresses
+		ipRegex := regexp.MustCompile(`\b(?:\d{1,3}\.){3}\d{1,3}\b`)
+		addresses = ipRegex.FindAllString(strings.Join(addresses, " "), -1)
+	}
+
+	if len(addresses) == 0 {
+	    return nil
 	}
 
 	var wgAddresses sync.WaitGroup
