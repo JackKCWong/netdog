@@ -22,9 +22,9 @@ var lookupCmd = &cobra.Command{
 			return err
 		}
 
-		var addr string
+		var addr []string
 		if len(args) > 0 {
-			addr = args[0]
+			addr = args
 		}
 
 		return r.Lookup(addr, withName)
@@ -35,10 +35,10 @@ func init() {
 	lookupCmd.Flags().Bool("name", false, "lookup names of the IP address(es)")
 }
 
-func (r *Runner) Lookup(addr string, withName bool) error {
+func (r *Runner) Lookup(addr []string, withName bool) error {
 	var addresses []string
-	if addr != "" {
-		addresses = []string{addr}
+	if addr != nil {
+		addresses = addr
 	} else {
 		addresses = r.ReadLines()
 	}
