@@ -43,20 +43,20 @@ func (r *Runner) Lookup(addr string, withName bool) error {
 		addresses = r.ReadLines()
 	}
 
-	var wg sync.WaitGroup
+	var wgAddresses sync.WaitGroup
 	var resolver = &net.Resolver{
 		PreferGo: true,
 	}
 
 	tw := tabwriter.NewWriter(r.Output, 0, 0, 4, ' ', 0)
-	sw := newMutWriter(tw)
-	var mu sync.Mutex
+	sw := newSyncWriter(tw)
+	var lockAddr sync.Mutex
 
 	for _, ad := range addresses {
 		ad := ad
-		wg.Add(1)
+		wgAddresses.Add(1)
 		go func() {
-			defer wg.Done()
+			defer wgAddresses.Done()
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 
@@ -84,8 +84,8 @@ func (r *Runner) Lookup(addr string, withName bool) error {
 				}
 			}
 
-			mu.Lock()
-			defer mu.Unlock()
+			lockAddr.Lock()
+			defer lockAddr.Unlock()
 
 			row{
 				Host: ad,
@@ -94,12 +94,12 @@ func (r *Runner) Lookup(addr string, withName bool) error {
 				Name: lookupName(result[0]),
 			}.print(sw)
 
-			var ipWg sync.WaitGroup
+			var wgIP sync.WaitGroup
 			for _, ip := range result[1:] {
 				ip := ip
-				ipWg.Add(1)
+				wgIP.Add(1)
 				go func() {
-					defer ipWg.Done()
+					defer wgIP.Done()
 					row{
 						Host: "",
 						Time: 0,
@@ -109,12 +109,12 @@ func (r *Runner) Lookup(addr string, withName bool) error {
 				}()
 			}
 
-			ipWg.Wait()
+			wgIP.Wait()
 			Fprintfln(sw, "\t\t\t")
 		}()
 	}
 
-	wg.Wait()
+	wgAddresses.Wait()
 	err := tw.Flush()
 	if err != nil {
 		return err

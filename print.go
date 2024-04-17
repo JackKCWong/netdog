@@ -10,18 +10,18 @@ func Fprintfln(w io.Writer, format string, args ...interface{}) {
 	_, _ = fmt.Fprintf(w, format+"\n", args...)
 }
 
-func newMutWriter(w io.Writer) *mutWriter {
-	return &mutWriter{
+func newSyncWriter(w io.Writer) *syncWriter {
+	return &syncWriter{
 		w: w,
 	}
 }
 
-type mutWriter struct {
+type syncWriter struct {
 	m sync.Mutex
 	w io.Writer
 }
 
-func (c *mutWriter) Write(p []byte) (n int, err error) {
+func (c *syncWriter) Write(p []byte) (n int, err error) {
 	c.m.Lock()
 	defer c.m.Unlock()
 
