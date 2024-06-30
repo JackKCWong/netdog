@@ -19,7 +19,15 @@ netdog --tls ws.postman-echo.com:443 ws.http hello.bin close.bin
 
 # test tcp / tls connection to target
 netdog dial httpbin.org:80
+# example outoput
+# remote             tcp latency    ip                ip lookup
+# httpbin.org:80    255.128834ms    44.195.190.188    ec2-44-195-190-188.compute-1.amazonaws.com.
+
 netdog dial --tls httpbin.org:443
+# example outoput
+# remote            tcp latency     tls latency     total latency    ip                tls version   cipher                                  ip lookup
+# httpbin.org:443    240.778292ms    458.478625ms    699.256917ms    44.195.190.188    TLS1.2        TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256    ec2-44-195-190-188.compute-1.amazonaws.com.
+
 printf "httpbin.org:80\nhttpbin.org:443" | netdog dial # this only test for tcp connection, not tls
 
 # lookup DNS and time the responses

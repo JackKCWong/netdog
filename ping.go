@@ -38,6 +38,7 @@ var pingCmd = &cobra.Command{
 		sniff, _ := cmd.Flags().GetBool("sniff")
 
 		var wg sync.WaitGroup
+		var mut sync.Mutex
 		for i := range targets {
 			wg.Add(1)
 			go func(target string) {
@@ -46,7 +47,9 @@ var pingCmd = &cobra.Command{
 					if err := r.Dial(network, target, tlsConfig, sniff); err != nil {
 						r.ErrPrintfln("%s", err)
 					}
+					mut.Lock()
 					tw.Flush()
+					mut.Unlock()
 				}
 			}(targets[i])
 		}
