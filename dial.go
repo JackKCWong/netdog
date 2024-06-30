@@ -102,19 +102,24 @@ func (r *Runner) Dial(network string, target string, tlsConfig *tls.Config, snif
 				tls.VersionTLS13: "TLS1.3",
 			}
 
-			startTm := time.Now()
-			if tlsConfig == nil {
-				conn, connErr = dialer.Dial(network, ad)
-			} else {
-				tlsConfig.ServerName = serverName
-				tlsConn, connErr = tls.DialWithDialer(&dialer, network, ad, tlsConfig)
-				conn = tlsConn
+			var tcpStartTm = time.Now()
+			var tcpEndTm time.Time
+			var tlsEndTm time.Time
+
+			conn, connErr = dialer.Dial(network, ad)
+			tcpEndTm = time.Now()
+
+			if connErr != nil {
+				r.Printfln("%s\t%s\t%s", target, tcpEndTm.Sub(tcpStartTm), connErr.Error())
+				return
 			}
 
-			endTm := time.Now()
-			if connErr != nil {
-				r.Printfln("%s\t%s\t%s", target, endTm.Sub(startTm), connErr.Error())
-				return
+			if tlsConfig != nil {
+				tlsConfig.ServerName = serverName
+				tlsConn = tls.Client(conn, tlsConfig)
+				tlsConn.Handshake()
+				tlsEndTm = time.Now()
+				conn = tlsConn
 			}
 
 			defer conn.Close()
@@ -123,14 +128,17 @@ func (r *Runner) Dial(network string, target string, tlsConfig *tls.Config, snif
 			defer cancel()
 			names, _ := resolver.LookupAddr(ctx, ip)
 			if tlsConfig == nil {
-				r.Printfln("%s\t%s\t%s\t%s", target, endTm.Sub(startTm), ip, strings.Join(names, ", "))
+				r.Printfln("%s\t%s\t%s\t%s", target, tcpEndTm.Sub(tcpStartTm), ip, strings.Join(names, ", "))
 			} else {
 				state := tlsConn.ConnectionState()
 				cipher := tls.CipherSuiteName(state.CipherSuite)
 				tlsVer := tlsVersions[state.Version]
 				alpn := state.NegotiatedProtocol
 
-				r.Printfln("%s\t%s\t%s\t%s\t%s\t%s\t%s", target, endTm.Sub(startTm),
+				r.Printfln("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s", target,
+					tcpEndTm.Sub(tcpStartTm),
+					tlsEndTm.Sub(tcpEndTm),
+					tlsEndTm.Sub(tcpStartTm),
 					ip, tlsVer, alpn, cipher, strings.Join(names, ", "))
 			}
 		}()
