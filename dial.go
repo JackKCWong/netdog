@@ -84,9 +84,9 @@ func (r *Runner) Dial(network string, target string, tlsConfig *tls.Config, snif
 	}
 
 	var wg sync.WaitGroup
-	for _, ad := range addr {
+	for _, adr := range addr {
 		wg.Add(1)
-		ad := ad
+		adr := adr
 		go func() {
 			defer wg.Done()
 			var dialer net.Dialer = net.Dialer{
@@ -106,7 +106,7 @@ func (r *Runner) Dial(network string, target string, tlsConfig *tls.Config, snif
 			var tcpEndTm time.Time
 			var tlsEndTm time.Time
 
-			conn, connErr = dialer.Dial(network, ad)
+			conn, connErr = dialer.Dial(network, adr)
 			tcpEndTm = time.Now()
 
 			if connErr != nil {

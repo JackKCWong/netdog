@@ -12,7 +12,7 @@ type Runner struct {
 	Input     io.Reader
 	Output    io.Writer
 	ErrOutput io.Writer
-	mux       sync.Mutex
+	mux       *sync.Mutex
 }
 
 func NewRunner() *Runner {
@@ -20,6 +20,7 @@ func NewRunner() *Runner {
 		Input:     os.Stdin,
 		Output:    os.Stdout,
 		ErrOutput: os.Stderr,
+		mux:       &sync.Mutex{},
 	}
 }
 

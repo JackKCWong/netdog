@@ -84,6 +84,7 @@ func init() {
 
 	root.AddCommand(dialCmd)
 	root.AddCommand(lookupCmd)
+	root.AddCommand(pingCmd)
 }
 
 func (r *Runner) WriteToSocket(network, target string, tlsConfig *tls.Config) error {
