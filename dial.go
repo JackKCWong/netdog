@@ -128,14 +128,14 @@ func (r *Runner) Dial(network string, target string, tlsConfig *tls.Config, snif
 			defer cancel()
 			names, _ := resolver.LookupAddr(ctx, ip)
 			if tlsConfig == nil {
-				r.Printfln("%s\t%s\t%s\t%s", target, tcpEndTm.Sub(tcpStartTm), ip, strings.Join(names, ", "))
+				r.Printfln("%s\ttcp:%s\t%s\t%s", target, tcpEndTm.Sub(tcpStartTm), ip, strings.Join(names, ", "))
 			} else {
 				state := tlsConn.ConnectionState()
 				cipher := tls.CipherSuiteName(state.CipherSuite)
 				tlsVer := tlsVersions[state.Version]
 				alpn := state.NegotiatedProtocol
 
-				r.Printfln("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s", target,
+				r.Printfln("%s\ttcp:%s\ttls:%s\ttotal:%s\t%s\t%s\t%s\t%s\t%s", target,
 					tcpEndTm.Sub(tcpStartTm),
 					tlsEndTm.Sub(tcpEndTm),
 					tlsEndTm.Sub(tcpStartTm),
