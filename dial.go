@@ -89,10 +89,15 @@ func (r *Runner) Dial(network string, target string, tlsConfig *tls.Config, snif
 		adr := adr
 		go func() {
 			defer wg.Done()
+			var err error
 			if tlsConfig == nil {
-				r.dialTcp(network, target, adr)
+				err = r.dialTcp(network, target, adr)
 			} else {
-				r.dialTls(network, target, adr, tlsConfig)
+				err = r.dialTls(network, target, adr, tlsConfig)
+			}
+
+			if err != nil {
+				r.ErrPrintfln("%s\t%s\terr: %s", target, addr, err)
 			}
 		}()
 	}
